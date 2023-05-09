@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Users from '../models';
 import bcrypt from 'bcrypt';
 import logger from '../shared/logger';
+import jwt from 'jsonwebtoken';
 
 const controller = {
   signUp: async (req: Request, res: Response) => {
@@ -33,6 +34,38 @@ const controller = {
         message: err.message || 'Something went wrong',
       });
     }
+  },
+  signIn: async (req: Request, res: Response) => {
+    try {
+    } catch (error) {}
+    const { emailId, password } = req.body;
+    const user = await Users.findOne({ emailId });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'Email does not exist, sign up first',
+      });
+    }
+    const correctPwd = await bcrypt.compare(password, user.password);
+    if (correctPwd && user.isVerified) {
+      const accessToken = jwt.sign(
+        {
+          id: user._id,
+          isAdmin: user.isAdmin,
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: '1d' }
+      );
+      return res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: accessToken,
+      });
+    }
+    return res.status(401).json({
+      success: false,
+      message: 'Invalid credentials or unverified user',
+    });
   },
 };
 
