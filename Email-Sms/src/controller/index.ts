@@ -5,7 +5,7 @@ import logger from '../shared/logger';
 const controller = {
   sendEmail: async (req: Request, res: Response) => {
     try {
-      const { to, subject, text } = req.body;
+      const { to, subject, text, html } = req.body;
       const transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 465,
@@ -20,6 +20,7 @@ const controller = {
         to: to,
         subject: subject,
         text: text,
+        html: html,
       };
       transporter.sendMail(mailOptions, function (error: any, info: any) {
         if (error) {

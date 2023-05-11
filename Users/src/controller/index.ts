@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import logger from '../shared/logger';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
+import { USER_CONSTANTS } from './user.constants';
 
 const controller = {
   signUp: async (req: Request, res: Response) => {
@@ -35,7 +36,8 @@ const controller = {
       await axios.post(`http://localhost:3001/api/user/sendEmail`, {
         to: emailId,
         subject: 'Email verification',
-        text: `Please click on the link to verify your Emailid -  http://localhost:3000/api/user/verifyEmail/${emailToken}`,
+        text: 'Email verification',
+        html: USER_CONSTANTS.emailVerificationMessage(emailToken),
       });
       logger.info('signUp api - User saved');
       return res.status(201).json({
@@ -52,35 +54,43 @@ const controller = {
   },
   signIn: async (req: Request, res: Response) => {
     try {
-    } catch (error) {}
-    const { emailId, password } = req.body;
-    const user = await Users.findOne({ emailId });
-    if (!user) {
-      return res.status(400).json({
+      const { emailId, password } = req.body;
+      const user = await Users.findOne({ emailId });
+      if (!user) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email does not exist, sign up first',
+        });
+      }
+      const correctPwd = await bcrypt.compare(password, user.password);
+      if (correctPwd && user.isVerified) {
+        const accessToken = jwt.sign(
+          {
+            id: user._id,
+            isAdmin: user.isAdmin,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: '1d' }
+        );
+        logger.info('Login successful');
+        return res.status(200).json({
+          success: true,
+          message: 'Login successful',
+          data: accessToken,
+        });
+      }
+      logger.error('Invalid creds or user unverified');
+      return res.status(401).json({
         success: false,
-        message: 'Email does not exist, sign up first',
+        message: 'Invalid credentials or unverified user',
+      });
+    } catch (err: any) {
+      logger.error(err.message);
+      return res.status(500).json({
+        success: false,
+        message: err.message || 'Something went wrong',
       });
     }
-    const correctPwd = await bcrypt.compare(password, user.password);
-    if (correctPwd && user.isVerified) {
-      const accessToken = jwt.sign(
-        {
-          id: user._id,
-          isAdmin: user.isAdmin,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: '1d' }
-      );
-      return res.status(200).json({
-        success: true,
-        message: 'Login successful',
-        data: accessToken,
-      });
-    }
-    return res.status(401).json({
-      success: false,
-      message: 'Invalid credentials or unverified user',
-    });
   },
 
   verifyEmail: async (req: Request, res: Response) => {
