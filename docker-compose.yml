@@ -1,0 +1,20 @@
+version: '3'
+services:
+  users:
+    container_name: Users_Container
+    build: ./Users
+    environment:
+      MONGO_URI: mongodb://mongo:27017/e-commerce_user
+    ports:
+      - 3000:3000
+    restart: always
+  email-sms:
+    container_name: Email_service_container
+    build: ./Email-Sms
+    ports:
+      - 3001:3001
+    restart: always
+  mongo:
+    image: mongo:latest
+    ports:
+      - 27017:27017

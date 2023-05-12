@@ -33,7 +33,7 @@ const controller = {
         emailVerificationToken: emailToken,
       });
       await newUser.save();
-      await axios.post(`http://localhost:3001/api/user/sendEmail`, {
+      await axios.post(`http://email-sms:3001/api/user/sendEmail`, {
         to: emailId,
         subject: 'Email verification',
         text: 'Email verification',
